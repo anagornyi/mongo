@@ -52,6 +52,7 @@
 #include <boost/filesystem/operations.hpp>
 #include "dur_commitjob.h"
 #include "mongo/db/commands/fsync.h"
+#include "query_profiler.h"
 
 namespace mongo {
     
@@ -480,6 +481,7 @@ namespace mongo {
                 if ( dbHolder()._isLoaded( nsToDatabase( currentOp.getNS() ) , dbpath ) ) {
                     Client::Context cx( currentOp.getNS(), dbpath, false );
                     profile(c , currentOp );
+                    profileQueries(c , currentOp );
                 }
                 else {
                     mongo::log() << "note: not profiling because db went away - probably a close on: " << currentOp.getNS() << endl;
