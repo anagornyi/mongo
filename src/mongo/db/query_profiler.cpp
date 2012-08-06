@@ -23,7 +23,7 @@ namespace mongo {
     class QueryProfiles {
     public:
         static void addQuery(BSONObj& query) {
-            std::map< BSONObj , int >::iterator it = _queryMap.find(query);
+            std::map<BSONObj, int>::iterator it = _queryMap.find(query);
             if (it == _queryMap.end()) {
                 _queryMap[query] = 1;
             } 
@@ -32,18 +32,18 @@ namespace mongo {
                 _queryMap[query] = ++count;
             }
         }
-        static std::map< BSONObj , int > getQueryMap() {
+        static std::map<BSONObj, int> getQueryMap() {
             return _queryMap;
         }
     private:
-        static std::map< BSONObj , int > createQueryMap() {
-            std::map<BSONObj , int> qm;
+        static std::map<BSONObj, int> createQueryMap() {
+            std::map<BSONObj, int> qm;
             return qm;
         }
-        static std::map< BSONObj , int > _queryMap;
+        static std::map<BSONObj, int> _queryMap;
     } queryProfiles;
 
-    std::map< BSONObj , int > QueryProfiles::_queryMap(QueryProfiles::createQueryMap());
+    std::map<BSONObj, int> QueryProfiles::_queryMap(QueryProfiles::createQueryMap());
     
     // Database command to retrieve query classifications
     class CmdGetQueryProfiles : public Command {
@@ -52,9 +52,9 @@ namespace mongo {
         virtual LockType locktype() const { return NONE; }
         virtual bool slaveOk() const { return true; };
         bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg, BSONObjBuilder& result, bool fromRepl) {
-            std::map< BSONObj , int > qm = QueryProfiles::getQueryMap();
+            std::map<BSONObj, int> qm = QueryProfiles::getQueryMap();
             BSONObjBuilder b;
-            for( std::map< BSONObj , int >::iterator it = qm.begin(); it != qm.end(); ++it) {
+            for( std::map<BSONObj, int>::iterator it = qm.begin(); it != qm.end(); ++it) {
                 b.append(it->first.toString(), it->second);
             }
             result.append("profiles", b.obj());
