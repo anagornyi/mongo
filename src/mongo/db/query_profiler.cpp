@@ -22,50 +22,49 @@ namespace mongo {
     // Wrapper class for data structure holding query classification data
     class QueryProfiles {
     public:
-        static void addQuery (BSONObj& query) {
-            std::map<BSONObj , int>::iterator it = queryMap.find(query);
-            if( it == queryMap.end() ) {
-                queryMap[query] = 1;
+        static void addQuery(BSONObj& query) {
+            std::map< BSONObj , int >::iterator it = _queryMap.find(query);
+            if (it == _queryMap.end()) {
+                _queryMap[query] = 1;
             } 
             else {
-                int count = queryMap[query];
-                queryMap[query] = ++count;
+                int count = _queryMap[query];
+                _queryMap[query] = ++count;
             }
         }
-        static std::map<BSONObj , int> getQueryMap () {
-            return queryMap;
+        static std::map< BSONObj , int > getQueryMap() {
+            return _queryMap;
         }
     private:
-        static std::map<BSONObj , int> createQueryMap() {
+        static std::map< BSONObj , int > createQueryMap() {
             std::map<BSONObj , int> qm;
             return qm;
         }
-        static std::map<BSONObj , int> queryMap;
-	
+        static std::map< BSONObj , int > _queryMap;
     } queryProfiles;
 
-    std::map<BSONObj , int> QueryProfiles::queryMap( QueryProfiles::createQueryMap() );
+    std::map< BSONObj , int > QueryProfiles::_queryMap(QueryProfiles::createQueryMap());
     
     // Database command to retrieve query classifications
     class CmdGetQueryProfiles : public Command {
     public:
-        CmdGetQueryProfiles():Command("getQueryProfiles"){}
+        CmdGetQueryProfiles():Command("getQueryProfiles") {}
         virtual LockType locktype() const { return NONE; }
         virtual bool slaveOk() const { return true; };
-        bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg, BSONObjBuilder& result, bool fromRepl){
-            std::map<BSONObj , int> qm = QueryProfiles::getQueryMap();
+        bool run(const string& dbname, BSONObj& cmdObj, int, string& errmsg, BSONObjBuilder& result, bool fromRepl) {
+            std::map< BSONObj , int > qm = QueryProfiles::getQueryMap();
             BSONObjBuilder b;
-            for(std::map<BSONObj , int>::iterator it = qm.begin(); it != qm.end(); ++it) {
-                b.append(it->first.toString() , it->second);
+            for( std::map< BSONObj , int >::iterator it = qm.begin(); it != qm.end(); ++it) {
+                b.append(it->first.toString(), it->second);
             }
-            result.append("profiles" , b.obj());
+            result.append("profiles", b.obj());
             return true;
         }    
     } cmdGetQueryProfiles;
     
     // Retrieve and log query from currentOp
     void profileQueries(const Client& c, CurOp& currentOp) {
-        if( ! str::equals( opToString(currentOp.getOp()) , "query" ) ) {
+        if (!str::equals(opToString(currentOp.getOp()), "query")) {
             return;
         }
         BSONObj query = currentOp.query();
@@ -73,37 +72,37 @@ namespace mongo {
         QueryProfiles::addQuery(querySkeleton);
     }
     
-    // Retrieve a query skeleton, for example: { x : 23 , y : { z : 12 } } --> { x : 1 , y : { z : 1 } }
+    // Retrieve a query skeleton
+    // For example: { x : 23 , y : { z : 12 } } --> { x : 1 , y : { z : 1 } }
     BSONObj getQuerySkeleton(BSONObj& query) {
-  
         BSONObjBuilder result;
         BSONObjIteratorSorted it(query);
         BSONObj sub , tmpObj;	    
         BSONElement e;
 
-        while( it.more() ) {
+        while (it.more()) {
             e = it.next();
             const char* fieldName = e.fieldName();
             
             // Account for queries using "." notation
-            const char *p = strchr( fieldName , '.' );
-            if( p ) {
+            const char *p = strchr(fieldName, '.');
+            if (p) {
                 tmpObj = dotted2nested(e.wrap());
-                string left(fieldName , p-fieldName);
+                string left(fieldName, p-fieldName);
                 fieldName = left.c_str();
                 sub = tmpObj.getObjectField(fieldName);
-                result.append( StringData(fieldName) , getQuerySkeleton(sub) );
+                result.append(StringData(fieldName), getQuerySkeleton(sub));
                 continue;
             } 
             
             tmpObj = e.wrap();
             sub = tmpObj.getObjectField(fieldName);
             
-            if( ! sub.isEmpty() ) {
-                result.append( StringData(fieldName) , getQuerySkeleton(sub) );
+            if (!sub.isEmpty()) {
+                result.append(StringData(fieldName), getQuerySkeleton(sub));
             } 
             else {
-                result.append( StringData(fieldName) , 1 );
+                result.append(StringData(fieldName), 1);
             }
         }
         return result.obj();

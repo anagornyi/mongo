@@ -21,8 +21,8 @@
 
 namespace mongo {
 
-    void profileQueries(const Client& c , CurOp& currentOp );
+    void profileQueries(const Client& c, CurOp& currentOp);
 
-    BSONObj getQuerySkeleton(BSONObj& query );
+    BSONObj getQuerySkeleton(BSONObj& query);
 
 } //namespace mongo
